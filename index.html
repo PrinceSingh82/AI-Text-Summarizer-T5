@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Text Summarizer</title>
+
+
+    <style>
+
+        /* ==============================
+           BASIC RESET
+        ============================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        /* ==============================
+           BODY
+        ============================== */
+
+        body {
+
+            font-family: Arial, sans-serif;
+
+            background-color: #fff5e8;
+
+            min-height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+        }
+
+
+        /* ==============================
+           MAIN CONTAINER
+        ============================== */
+
+        .container {
+
+            width: 750px;
+
+            background-color: white;
+
+            padding: 38px;
+
+            border-radius: 12px;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+
+        }
+
+
+        /* ==============================
+           TITLE
+        ============================== */
+
+        h1 {
+
+            text-align: center;
+
+            color: #ed7d27;
+
+            font-size: 32px;
+
+            margin-bottom: 5px;
+
+        }
+
+
+        /* ==============================
+           SUBTITLE
+        ============================== */
+
+        .subtitle {
+
+            text-align: center;
+
+            font-size: 17px;
+
+            font-weight: bold;
+
+            color: #222;
+
+            margin-bottom: 35px;
+
+        }
+
+
+        /* ==============================
+           DESCRIPTION
+        ============================== */
+
+        .description {
+
+            font-size: 15px;
+
+            color: #333;
+
+            margin-bottom: 12px;
+
+        }
+
+
+        /* ==============================
+           TEXTAREA
+        ============================== */
+
+        textarea {
+
+            width: 100%;
+
+            height: 150px;
+
+            padding: 12px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 5px;
+
+            font-size: 15px;
+
+            font-family: Arial, sans-serif;
+
+            resize: vertical;
+
+            outline: none;
+
+        }
+
+
+        textarea:focus {
+
+            border-color: #ed7d27;
+
+        }
+
+
+        textarea::placeholder {
+
+            color: #888;
+
+        }
+
+
+        /* ==============================
+           BUTTON
+        ============================== */
+
+        button {
+
+            width: 100%;
+
+            margin-top: 12px;
+
+            padding: 11px;
+
+            background-color: #ff6900;
+
+            color: white;
+
+            border: none;
+
+            border-radius: 5px;
+
+            font-size: 16px;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+        }
+
+
+        button:hover {
+
+            background-color: #e85d00;
+
+        }
+
+
+        /* ==============================
+           SUMMARY BOX
+        ============================== */
+
+        .summary-output {
+
+            margin-top: 18px;
+
+            background-color: #fff0d8;
+
+            border: 1px solid #e4cba8;
+
+            border-radius: 5px;
+
+            padding: 18px;
+
+        }
+
+
+        .summary-output h3 {
+
+            text-align: center;
+
+            color: #222;
+
+            margin-bottom: 12px;
+
+            font-size: 18px;
+
+        }
+
+
+        .summary-output p {
+
+            font-size: 14px;
+
+            line-height: 1.6;
+
+            color: #333;
+
+            margin-bottom: 0;
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- ==============================
+         MAIN CONTAINER
+    ============================== -->
+
+    <div class="container">
+
+
+        <!-- TITLE -->
+
+        <h1>
+            Text Summarizer
+        </h1>
+
+
+        <!-- SUBTITLE -->
+
+        <div class="subtitle">
+
+            using HuggingFace Transformer
+
+        </div>
+
+
+        <!-- DESCRIPTION -->
+
+        <p class="description">
+
+            Write or Paste your content below for quick summarization.
+
+        </p>
+
+
+        <!-- FORM -->
+
+        <form id="summaryForm">
+
+
+            <!-- TEXT INPUT -->
+
+            <textarea
+                id="dialogue"
+                placeholder="Enter your content here..."
+                required></textarea>
+
+
+            <!-- BUTTON -->
+
+            <button type="submit" id="summarizeBtn">
+
+                Summarize
+
+            </button>
+
+
+        </form>
+
+
+        <!-- ==============================
+             SUMMARY OUTPUT
+        ============================== -->
+
+        <div class="summary-output">
+
+
+            <h3>
+                Content Summary
+            </h3>
+
+
+            <p id="summaryText">
+
+                Your summary will appear here...
+
+            </p>
+
+
+        </div>
+
+
+    </div>
+
+
+
+    <!-- ==============================
+         JAVASCRIPT
+    ============================== -->
+
+    <script>
+
+
+        // Get HTML elements
+
+        const form = document.getElementById("summaryForm");
+
+        const dialogue = document.getElementById("dialogue");
+
+        const summaryText = document.getElementById("summaryText");
+
+        const summarizeBtn = document.getElementById("summarizeBtn");
+
+
+        // Form submit event
+
+        form.addEventListener("submit", async function(event) {
+
+
+            // Prevent page refresh
+
+            event.preventDefault();
+
+
+            // Get user input
+
+            const text = dialogue.value.trim();
+
+
+            // Check empty input
+
+            if (!text) {
+
+                summaryText.innerText =
+                    "Please enter some text first.";
+
+                return;
+
+            }
+
+
+            // Show loading message
+
+            summaryText.innerText =
+                "Generating summary... Please wait.";
+
+
+            summarizeBtn.innerText =
+                "Summarizing...";
+
+            summarizeBtn.disabled = true;
+
+
+            try {
+
+
+                // Send request to FastAPI
+
+                const response = await fetch(
+                    "http://127.0.0.1:8000/summarize/",
+                    {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body: JSON.stringify({
+
+                            dialogue: text
+
+                        })
+
+                    }
+                );
+
+
+                // Check response
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Server error"
+                    );
+
+                }
+
+
+                // Convert response to JSON
+
+                const data =
+                    await response.json();
+
+
+                // Display summary
+
+                summaryText.innerText =
+                    data.summary;
+
+
+            }
+
+
+            catch (error) {
+
+
+                console.error(error);
+
+
+                summaryText.innerText =
+                    "Error: Could not connect to the FastAPI server. Make sure the server is running.";
+
+
+            }
+
+
+            finally {
+
+
+                // Restore button
+
+                summarizeBtn.innerText =
+                    "Summarize";
+
+                summarizeBtn.disabled =
+                    false;
+
+            }
+
+
+        });
+
+    </script>
+
+
+</body>
+
+</html>
